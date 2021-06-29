@@ -25,15 +25,11 @@ namespace masstransit_hangfire_awssqs_poc
             GlobalConfiguration.Configuration.UseMemoryStorage();
             
             ILoggerFactory loggerFactory = new SerilogLoggerFactory(logger, true);
-            var busControl = Bus.Factory.CreateUsingAmazonSqs(cfg =>
+            var busControl = Bus.Factory.CreateUsingRabbitMq(cfg =>
             {
                 LogContext.ConfigureCurrentLogContext(loggerFactory);
 
-                cfg.Host("eu-west-1", config =>
-                {
-                    config.AccessKey("your-iam-access-key");
-                    config.SecretKey("your-iam-secret-key");
-                });
+                cfg.Host(new Uri("rabbitmq://guest:guest@localhost:5672"));
 
                 cfg.UseHangfireScheduler("hangfire",
                     options => { options.SchedulePollingInterval = TimeSpan.FromSeconds(1); });
