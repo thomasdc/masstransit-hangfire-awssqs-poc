@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Threading.Tasks;
+using Hangfire;
+using Hangfire.MemoryStorage;
 using MassTransit;
 using MassTransit.Context;
 using MassTransit.Scheduling;
@@ -19,6 +21,9 @@ namespace masstransit_hangfire_awssqs_poc
                 .WriteTo.Console(LogEventLevel.Debug)
                 .MinimumLevel.Debug()
                 .CreateLogger();
+
+            GlobalConfiguration.Configuration.UseMemoryStorage();
+            
             ILoggerFactory loggerFactory = new SerilogLoggerFactory(logger, true);
             var busControl = Bus.Factory.CreateUsingAmazonSqs(cfg =>
             {
@@ -29,6 +34,9 @@ namespace masstransit_hangfire_awssqs_poc
                     config.AccessKey("your-iam-access-key");
                     config.SecretKey("your-iam-secret-key");
                 });
+
+                cfg.UseHangfireScheduler("hangfire",
+                    options => { options.SchedulePollingInterval = TimeSpan.FromSeconds(1); });
 
                 cfg.ReceiveEndpoint("message",
                     configure =>
@@ -56,7 +64,7 @@ namespace masstransit_hangfire_awssqs_poc
     {
         public RecurringSchedule()
         {
-            CronExpression = "*/10 * * * * *";
+            CronExpression = "*/10 * * * * *"; // Every 10 seconds
             MisfirePolicy = MissedEventPolicy.Skip;
         }
     }
